@@ -93,7 +93,7 @@ function runQuery(){
 	
 	echo "Running query$1 with command: ${CMD}" 2>&1 | tee ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
 	start=$(date +%s%3N)
-	#eval ${CMD} 2>&1 | tee -a ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	eval ${CMD} 2>&1 | tee -a ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
 	RES=$?
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
@@ -139,12 +139,12 @@ function runAll(){
 		/mnt/PAT/clear_cache.sh
 		echo "Running round $r"
 		export LOG_NAME=logs_${ENGINE}_${SCALE_FACTOR}_`date +%Y%m%d%H%M%S`
-		for q in {1..18};
+		for q in {1..22};
 		do
 			runQuery $q
 		done
 		
-		for q in {20..22};do runQuery $q; done
+		#for q in {20..22};do runQuery $q; done
 		echo "Round $r finished, logs are saved into: ${OUT_DIR_PATH}/${LOG_NAME}"
 		## Backup the corresponding settings to log dir
 		BACKUP ${OUT_DIR_PATH}/${LOG_NAME}
