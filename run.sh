@@ -1,7 +1,18 @@
 SCALE_FACTOR="1000"
-ENGINE="mr"
-OUT_DIR_PATH="output"
+## engine to run, can be mr spark sparksql
+ENGINE="sparksql"
+
 LOG_NAME="logs"
+CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
+BENCH_SETTING="${CURRENT_DIR}/sample-queries-tpch/testbench.settings"
+GLOBAL_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}.settings"
+LOCAL_SETTING_ROOT="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}"
+PRINT_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/print.settings"
+SPARK_USER_CONF="${CURRENT_DIR}/sample-queries-tpch/conf/spark.conf"
+QUERY_ROOT="${CURRENT_DIR}/sample-queries-tpch"
+OUT_DIR_PATH="${CURRENT_DIR}/output"
+
+
 if test ${SCALE_FACTOR} -le 1000; then
 	SCHEMA_TYPE=flat
 else
@@ -51,25 +62,70 @@ function runQuery(){
         	echo "Dir Created!"
 	fi
 	
-	OPTION=(-i sample-queries-tpch/testbench.settings) 
-	LOCAL_SETTING="./sample-queries-tpch/conf/tpch_query${1}_${ENGINE}.settings"
+	OPTION=(-i ${BENCH_SETTING}) 
+	if [ -e ${GLOBAL_SETTING} ]; then
+		OPTION+=(-i ${GLOBAL_SETTING})
+	fi
+
+	LOCAL_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}/tpch_query${1}_${ENGINE}.settings"
 	if [ -e ${LOCAL_SETTING} ]; then
 		OPTION+=(-i ${LOCAL_SETTING})
 	fi
 	
-	OPTION+=(-f sample-queries-tpch/tpch_query${1}.sql --database ${DATABASE})
-	PRINT_SETTING="./sample-queries-tpch/print.settings"
-	if [ -e ${PRINT_SETTING} ]; then
-		 OPTION+=(-i ${PRINT_SETTING})
+	OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
+	
+	## keep print setting at last
+        if [ -e ${PRINT_SETTING} ]; then
+                 OPTION+=(-i ${PRINT_SETTING})
+        fi
+	
+	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
+		CMD="hive ${OPTION[@]}"
+	elif [[ ${ENGINE} == "sparksql" ]]; then
+		if [ -e ${PRINT_SETTING} ]; then
+                	OPTION+=(--properties-file ${SPARK_USER_CONF})
+        	fi
+		CMD="spark-sql ${OPTION[@]}"
+	else
+		echo "Currently only support engine: mr/spark/sparksql, exiting..."
+		exit -1
 	fi
-
-	CMD="hive ${OPTION[@]}"
-	echo "Running query$1 with command: ${CMD}"
+	
+	echo "Running query$1 with command: ${CMD}" 2>&1 | tee ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
 	start=$(date +%s%3N)
-	hive ${OPTION[@]} 2>&1 | tee ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log 
+	#eval ${CMD} 2>&1 | tee -a ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	RES=$?
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
-	echo "query$1 finished!"
+	if [[ ${RES} == 0 ]]; then
+		echo "query$1 finished successfully!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	else
+		echo "query$1 failed!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	fi
+}
+
+function BACKUP(){
+	SETTING_DIR=$1/conf
+	if [[ ! -d ${SETTING_DIR} ]]; then
+		mkdir -p ${SETTING_DIR}
+	fi
+	
+	if [[ -d ${LOCAL_SETTING_ROOT} ]]; then
+		cp -r ${LOCAL_SETTING_ROOT} ${SETTING_DIR}
+	fi
+	
+	if [ -e ${BENCH_SETTING} ]; then
+		cp -r ${BENCH_SETTING} ${SETTING_DIR}
+	fi
+	if [ -e ${GLOBAL_SETTING} ]; then
+		cp -r ${GLOBAL_SETTING} ${SETTING_DIR}
+	fi
+	if [ -e ${PRINT_SETTING} ]; then
+		cp -r ${PRINT_SETTING} ${SETTING_DIR}
+	fi
+	if [ -e ${SPARK_USER_CONF} ]; then
+                cp -r ${SPARK_USER_CONF} ${SETTING_DIR}
+        fi
 }
 
 function runAll(){
@@ -82,7 +138,7 @@ function runAll(){
 	do
 		/mnt/PAT/clear_cache.sh
 		echo "Running round $r"
-		export LOG_NAME=logs_${SCALE_FACTOR}_`date +%Y%m%d%H%M%S`
+		export LOG_NAME=logs_${ENGINE}_${SCALE_FACTOR}_`date +%Y%m%d%H%M%S`
 		for q in {1..18};
 		do
 			runQuery $q
@@ -90,8 +146,10 @@ function runAll(){
 		
 		for q in {20..22};do runQuery $q; done
 		echo "Round $r finished, logs are saved into: ${OUT_DIR_PATH}/${LOG_NAME}"
+		## Backup the corresponding settings to log dir
+		BACKUP ${OUT_DIR_PATH}/${LOG_NAME}
 	done
 }
 
-#runAll 2
-runQuery 21
+runAll 1
+#runQuery 1
