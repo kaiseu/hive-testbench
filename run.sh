@@ -68,9 +68,9 @@ function runQuery(){
 	fi
 
 	LOCAL_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}/tpch_query${1}_${ENGINE}.settings"
-	if [ -e ${LOCAL_SETTING} ]; then
-		OPTION+=(-i ${LOCAL_SETTING})
-	fi
+#	if [ -e ${LOCAL_SETTING} ]; then
+#		OPTION+=(-i ${LOCAL_SETTING})
+#	fi
 	
 	OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
 	
@@ -80,11 +80,20 @@ function runQuery(){
         fi
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
+        	if [ -e ${LOCAL_SETTING} ]; then
+                	OPTION+=(-i ${LOCAL_SETTING})
+        	fi
+		OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
 		CMD="hive ${OPTION[@]}"
 	elif [[ ${ENGINE} == "sparksql" ]]; then
 		if [ -e ${PRINT_SETTING} ]; then
                 	OPTION+=(--properties-file ${SPARK_USER_CONF})
         	fi
+		
+		if [ -e ${LOCAL_SETTING} ]; then
+                OPTION+=(-i ${LOCAL_SETTING})
+        	fi
+		OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
 		CMD="spark-sql ${OPTION[@]}"
 	else
 		echo "Currently only support engine: mr/spark/sparksql, exiting..."
@@ -151,5 +160,5 @@ function runAll(){
 	done
 }
 
-runAll 1
-#runQuery 1
+#runAll 2
+runQuery 15
