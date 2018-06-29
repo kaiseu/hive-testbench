@@ -28,6 +28,13 @@ function Load(){
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${LOG_DIR}/load_alltables.log
 	echo "`date` Loading done!" >> ${LOG_DIR}/load_alltables.log
+
+	echo "`date` Starting compute stats for tables..." 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
+	start=$(date +%s%3N)
+	impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_flat_kudu/computeStats.sql -d ${KUDU_DB_NAME} --var=DB=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
+	end=$(date +%s%3N)
+	getExecTime $start $end >> ${LOG_DIR}/load_alltables.log
+        echo "`date` Compute done!" >> ${LOG_DIR}/load_alltables.log
 }
 
 function runQuery(){
