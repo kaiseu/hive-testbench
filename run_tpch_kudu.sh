@@ -39,12 +39,14 @@ function Load(){
 
 function runQuery(){
 	query=$1
-	echo "run query ${query}..."
+	echo "`date` run query ${query}..."  2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
+	CMD="impala-shell -i ${TABLET_SERVER} -f sample-queries-tpch/tpch_query${query}.sql -d ${KUDU_DB_NAME}"
+	echo ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
 	start=$(date +%s%3N)
-	impala-shell -i ${TABLET_SERVER} -f sample-queries-tpch/tpch_query${query}.sql -d ${KUDU_DB_NAME} 2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
+	eval ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${LOG_DIR}/tpch_query${query}.log
-	echo "query ${query} done!"
+	echo "`date` query ${query} done!" >> ${LOG_DIR}/tpch_query${query}.log
 }
 
 function runAll(){
@@ -55,3 +57,4 @@ function runAll(){
 
 #Load
 #pssh -h /root/slaves -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
+runQuery 2
