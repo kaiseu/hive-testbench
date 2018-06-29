@@ -3,7 +3,7 @@ DIR=/tmp/tpch
 TABLET_SERVER='skl-slave9'
 time=`date +%Y%m%d%H%M%S`
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
-LOG_DIR=${CURRENT_DIR}/output/kudu_log_${time}
+LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
 if [ ! -d ${LOG_DIR} ]; then
 	mkdir -p ${LOG_DIR}
 fi
