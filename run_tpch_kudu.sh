@@ -55,6 +55,9 @@ function runAll(){
 	done
 }
 
+function cleanCache(){
+	pssh -h /root/slaves -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
+}
+
 #Load
-#pssh -h /root/slaves -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
 runQuery 2
