@@ -42,3 +42,4 @@ order by
 	o_totalprice desc,
 	o_orderdate 
 limit 100;
+profile;

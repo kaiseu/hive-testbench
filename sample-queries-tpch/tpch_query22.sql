@@ -62,3 +62,4 @@ group by
 	cntrycode
 order by
 	cntrycode;
+profile;

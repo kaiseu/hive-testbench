@@ -1,4 +1,4 @@
-drop view q2_min_ps_supplycost;
+drop view if exists q2_min_ps_supplycost;
 create view q2_min_ps_supplycost as
 select
 	p_partkey as min_p_partkey,
@@ -50,3 +50,4 @@ order by
 	s_name,
 	p_partkey
 limit 100;
+profile;

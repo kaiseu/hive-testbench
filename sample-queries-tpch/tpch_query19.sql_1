@@ -22,15 +22,14 @@ where
 		and p_size between 1 and 10
 		and l_shipmode in ('AIR', 'AIR REG')
 		and l_shipinstruct = 'DELIVER IN PERSON'
-	)
-	or
-	(
-		p_partkey = l_partkey
-		and p_brand = 'Brand#24'
-		and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
-		and l_quantity >= 26 and l_quantity <= 26 + 10
-		and p_size between 1 and 15
-		and l_shipmode in ('AIR', 'AIR REG')
-		and l_shipinstruct = 'DELIVER IN PERSON'
 	);
-profile;
+	--or
+	--(
+	--	p_partkey = l_partkey
+	--	and p_brand = 'Brand#24'
+	--	and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+	--	and l_quantity >= 26 and l_quantity <= 26 + 10
+	--	and p_size between 1 and 15
+	--	and l_shipmode in ('AIR', 'AIR REG')
+	--	and l_shipinstruct = 'DELIVER IN PERSON'
+	--);
