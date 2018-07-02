@@ -32,4 +32,3 @@ where
 	s_suppkey = supplier_no
 	and total_revenue = max_revenue 
 order by s_suppkey;
-profile;

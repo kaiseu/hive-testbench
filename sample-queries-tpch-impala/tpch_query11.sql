@@ -35,4 +35,3 @@ where
 	part_value > total_value * 0.0001
 order by
 	value desc;
-profile;

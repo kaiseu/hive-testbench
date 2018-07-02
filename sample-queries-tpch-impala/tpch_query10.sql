@@ -30,4 +30,3 @@ group by
 order by
 	revenue desc
 limit 20;
-profile;

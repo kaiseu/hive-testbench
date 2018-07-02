@@ -26,4 +26,3 @@ group by
 	l_shipmode
 order by
 	l_shipmode;
-profile;

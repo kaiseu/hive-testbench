@@ -40,7 +40,7 @@ function Load(){
 function runQuery(){
 	query=$1
 	echo "`date` run query ${query}..."  2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
-	CMD="impala-shell -i ${TABLET_SERVER} -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME}"
+	CMD="impala-shell -i ${TABLET_SERVER} -p -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME}"
 	echo ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
 	start=$(date +%s%3N)
 	eval ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
@@ -61,4 +61,5 @@ function cleanCache(){
 
 #Load
 #cleanCache
-runAll
+runQuery 2
+#runAll
