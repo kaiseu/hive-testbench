@@ -38,3 +38,4 @@ from
 where
     s_suppkey IN (select ps_suppkey from tmp5)
 order by s_name;
+profile;

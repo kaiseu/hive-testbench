@@ -39,3 +39,4 @@ order by
  numwait desc,
  s_name
 limit 100;
+profile;
