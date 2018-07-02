@@ -4,8 +4,13 @@ TABLET_SERVER='skl-slave9'
 time=`date +%Y%m%d%H%M%S`
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
+IMPALA_CONF_FILE=${CURRENT_DIR}/sample-queries-tpch-impala/conf/impala.conf
+IMPALA_RESULT_FILE=${CURRENT_DIR}/output/impala_result.log
 if [ ! -d ${LOG_DIR} ]; then
 	mkdir -p ${LOG_DIR}
+fi
+if [ ! -f ${IMPALA_RESULT_FILE} ]; then
+	touch ${IMPALA_RESULT_FILE}
 fi
 
 IMPALA_DB_NAME=tpch_impala_${SCALE}
@@ -41,6 +46,9 @@ function runQuery(){
 	query=$1
 	echo "`date` run query ${query}..."  2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
 	CMD="impala-shell -i ${TABLET_SERVER} -p -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME}"
+	if [[ -f ${IMPALA_CONF_FILE} ]]; then
+		CMD+=" --config_file=${IMPALA_CONF_FILE}"
+	fi
 	echo ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
 	start=$(date +%s%3N)
 	eval ${CMD} 2>&1 | tee -a ${LOG_DIR}/tpch_query${query}.log
