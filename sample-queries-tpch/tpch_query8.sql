@@ -35,4 +35,4 @@ group by
 	o_year
 order by
 	o_year;
-profile;
+

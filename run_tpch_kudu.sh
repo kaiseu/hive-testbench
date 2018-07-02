@@ -60,4 +60,5 @@ function cleanCache(){
 }
 
 #Load
-runQuery 2
+#cleanCache
+runAll
