@@ -1,20 +1,23 @@
 SCALE=1000
 DIR=/tmp/tpch
 TABLET_SERVER='skl-slave9'
-time=`date +%Y%m%d%H%M%S`
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
-LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
 IMPALA_CONF_FILE=${CURRENT_DIR}/sample-queries-tpch-impala/conf/impala.conf
-IMPALA_RESULT_FILE=${CURRENT_DIR}/output/impala_result.log
-if [ ! -d ${LOG_DIR} ]; then
-	mkdir -p ${LOG_DIR}
-fi
-if [ ! -f ${IMPALA_RESULT_FILE} ]; then
-	touch ${IMPALA_RESULT_FILE}
-fi
-
+LOG_DIR="output/"
 IMPALA_DB_NAME=tpch_impala_${SCALE}
 KUDU_DB_NAME=tpch_kudu_${SCALE}
+
+function mkLogDir(){
+time=`date +%Y%m%d%H%M%S`
+export LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
+export IMPALA_RESULT_FILE=${CURRENT_DIR}/output/impala_result.log
+if [ ! -d ${LOG_DIR} ]; then
+        mkdir -p ${LOG_DIR}
+fi
+if [ ! -f ${IMPALA_RESULT_FILE} ]; then
+        touch ${IMPALA_RESULT_FILE}
+fi
+}
 
 function getExecTime() {
         start=$1
@@ -58,6 +61,7 @@ function runQuery(){
 }
 
 function runAll(){
+	mkLogDir
 	for n in {1..22}; do
 		runQuery ${n}
 	done
@@ -69,5 +73,7 @@ function cleanCache(){
 
 #Load
 #cleanCache
-runQuery 2
+#runQuery 3
+#runAll
+#sleep 120
 #runAll
