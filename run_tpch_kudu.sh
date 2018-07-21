@@ -5,7 +5,8 @@ FORMAT='TEXTFILE'
 PARTITION=true
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 IMPALA_CONF_FILE=${CURRENT_DIR}/sample-queries-tpch-impala/conf/impala.conf
-LOG_DIR="output/"
+LOG_DIR=${CURRENT_DIR}/output
+RESULT_DIR=${LOG_DIR}/results
 IMPALA_DB_NAME=tpch_impala_${SCALE}
 if [[ ${PARTITION}==true ]]; then {
 	PARTITION_DB_NAME=tpch_impala_${SCALE}_partition
@@ -15,15 +16,19 @@ if [[ ${PARTITION}==true ]]; then {
 }
 fi
 
+if [[ ! -d ${RESULT_DIR} ]]; then
+	mkdir -p ${RESULT_DIR}
+fi
+
 function mkLogDir(){
 time=`date +%Y%m%d%H%M%S`
 export LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
-export IMPALA_RESULT_FILE=${CURRENT_DIR}/output/impala_result.log
+export RESULT_DIR=${LOG_DIR}/results
 if [ ! -d ${LOG_DIR} ]; then
         mkdir -p ${LOG_DIR}
 fi
-if [ ! -f ${IMPALA_RESULT_FILE} ]; then
-        touch ${IMPALA_RESULT_FILE}
+if [ ! -d ${RESULT_DIR} ]; then
+        mkdir -p ${RESULT_DIR}
 fi
 }
 
@@ -91,8 +96,12 @@ fi
 
 function runQuery(){
 	query=$1
+	QUERY_RESULT=${RESULT_DIR}/result_query${query}.log
+	if [[ ! -f ${QUERY_RESULT} ]]; then
+		touch ${QUERY_RESULT}
+	fi
 	echo "`date` run query ${query}..."  2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
-	CMD="impala-shell -i ${TABLET_SERVER} -p -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME} -o ${IMPALA_RESULT_FILE}"
+	CMD="impala-shell -i ${TABLET_SERVER} -p -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME} -o ${QUERY_RESULT}"
 	if [[ -f ${IMPALA_CONF_FILE} ]]; then
 		CMD+=" --config_file=${IMPALA_CONF_FILE}"
 	fi
@@ -120,4 +129,3 @@ function cleanCache(){
 cleanCache
 runAll
 sleep 120
-
