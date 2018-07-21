@@ -4,8 +4,9 @@ TABLET_SERVER='skl-slave9'
 FORMAT='TEXTFILE'
 PARTITION=true
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
-IMPALA_CONF_FILE=${CURRENT_DIR}/sample-queries-tpch-impala/conf/impala.conf
-LOG_DIR=${CURRENT_DIR}/output
+TESTBENCH_ROOT=${CURRENT_DIR}
+IMPALA_CONF_FILE=${TESTBENCH_ROOT}/sample-queries-tpch-impala/conf/impala.conf
+LOG_DIR=${TESTBENCH_ROOT}/output
 RESULT_DIR=${LOG_DIR}/results
 IMPALA_DB_NAME=tpch_impala_${SCALE}
 if [[ ${PARTITION}==true ]]; then {
@@ -22,7 +23,7 @@ fi
 
 function mkLogDir(){
 time=`date +%Y%m%d%H%M%S`
-export LOG_DIR=${CURRENT_DIR}/output/logs_tpch_impala_${SCALE}_${time}
+export LOG_DIR=${TESTBENCH_ROOT}/output/logs_tpch_impala_${SCALE}_${time}
 export RESULT_DIR=${LOG_DIR}/results
 if [ ! -d ${LOG_DIR} ]; then
         mkdir -p ${LOG_DIR}
@@ -45,14 +46,14 @@ function Load_Flat(){
 	impala-shell -i ${TABLET_SERVER} -q "create database if not exists ${IMPALA_DB_NAME}" 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
 	impala-shell -i ${TABLET_SERVER} -q "create database if not exists ${KUDU_DB_NAME}" 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
 	start=$(date +%s%3N)
-	impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_flat_kudu/alltables.sql -d ${IMPALA_DB_NAME} --var=DB=${IMPALA_DB_NAME} --var=LOCATION=${DIR}/${SCALE} --var=KUDU_DB_NAME=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
+	impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_flat_kudu/alltables.sql -d ${IMPALA_DB_NAME} --var=DB=${IMPALA_DB_NAME} --var=LOCATION=${DIR}/${SCALE} --var=KUDU_DB_NAME=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${LOG_DIR}/load_alltables.log
 	echo "`date` Loading done!" >> ${LOG_DIR}/load_alltables.log
 
 	echo "`date` Starting compute stats for tables..." 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
 	start=$(date +%s%3N)
-	impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_flat_kudu/computeStats.sql -d ${KUDU_DB_NAME} --var=DB=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
+	impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_flat_kudu/computeStats.sql -d ${KUDU_DB_NAME} --var=DB=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/load_alltables.log
 	end=$(date +%s%3N)
 	getExecTime $start $end >> ${LOG_DIR}/load_alltables.log
         echo "`date` Compute done!" >> ${LOG_DIR}/load_alltables.log
@@ -64,22 +65,22 @@ function Load_Partition(){
         start=$(date +%s%3N)
         echo "`date` Loading text data into external tables." 2>&1 | tee ${LOG_DIR}/${LOG_FILE_NAME}
         impala-shell -i ${TABLET_SERVER} -q "create database if not exists ${IMPALA_DB_NAME}" 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
-        impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_partitioned_kudu/alltables_source.sql -d ${IMPALA_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=LOCATION=${DIR}/${SCALE} --var=FORMAT=${FORMAT} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
+        impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_partitioned_kudu/alltables_source.sql -d ${IMPALA_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=LOCATION=${DIR}/${SCALE} --var=FORMAT=${FORMAT} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
 
         echo "`date` Loading partitioned tables." 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
         impala-shell -i ${TABLET_SERVER} -q "create database if not exists ${PARTITION_DB_NAME}" 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
-        impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_partitioned_kudu/alltables_partition.sql -d ${PARTITION_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=FORMAT=${FORMAT} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
+        impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_partitioned_kudu/alltables_partition.sql -d ${PARTITION_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=FORMAT=${FORMAT} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
 
         echo "`date` Loading kudu tables." 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
         impala-shell -i ${TABLET_SERVER} -q "create database if not exists ${KUDU_DB_NAME}" 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
-        impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_partitioned_kudu/alltables_kudu.sql -d ${KUDU_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=KUDU_DB_NAME=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
+        impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_partitioned_kudu/alltables_kudu.sql -d ${KUDU_DB_NAME} --var=SOURCE_DB=${IMPALA_DB_NAME} --var=KUDU_DB_NAME=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
         end=$(date +%s%3N)
         getExecTime $start $end >> ${LOG_DIR}/${LOG_FILE_NAME}
         echo "`date` Loading done!" >> ${LOG_DIR}/${LOG_FILE_NAME}
 
         echo "`date` Starting compute stats for tables..." 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
         start=$(date +%s%3N)
-        impala-shell -i ${TABLET_SERVER} -f ddl-tpch/bin_partitioned_kudu/computeStats.sql -d ${KUDU_DB_NAME} --var=DB=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
+        impala-shell -i ${TABLET_SERVER} -f ${TESTBENCH_ROOT}/ddl-tpch/bin_partitioned_kudu/computeStats.sql -d ${KUDU_DB_NAME} --var=DB=${KUDU_DB_NAME} 2>&1 | tee -a ${LOG_DIR}/${LOG_FILE_NAME}
         end=$(date +%s%3N)
         getExecTime $start $end >> ${LOG_DIR}/${LOG_FILE_NAME}
         echo "`date` Compute done!" >> ${LOG_DIR}/${LOG_FILE_NAME}
@@ -101,7 +102,7 @@ function runQuery(){
 		touch ${QUERY_RESULT}
 	fi
 	echo "`date` run query ${query}..."  2>&1 | tee ${LOG_DIR}/tpch_query${query}.log
-	CMD="impala-shell -i ${TABLET_SERVER} -p -f sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME} -o ${QUERY_RESULT}"
+	CMD="impala-shell -i ${TABLET_SERVER} -p -f ${TESTBENCH_ROOT}/sample-queries-tpch-impala/tpch_query${query}.sql -d ${KUDU_DB_NAME} -o ${QUERY_RESULT}"
 	if [[ -f ${IMPALA_CONF_FILE} ]]; then
 		CMD+=" --config_file=${IMPALA_CONF_FILE}"
 	fi
