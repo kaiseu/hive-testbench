@@ -1,0 +1,52 @@
+drop table if exists ${var:KUDU_DB_NAME}.lineitem;
+CREATE TABLE ${var:KUDU_DB_NAME}.lineitem
+PRIMARY KEY (L_ORDERKEY)
+PARTITION BY HASH(L_ORDERKEY) PARTITIONS 40
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.lineitem; 
+
+drop table if exists ${var:KUDU_DB_NAME}.part;
+CREATE TABLE ${var:KUDU_DB_NAME}.part
+PRIMARY KEY (P_PARTKEY)
+PARTITION BY HASH(P_PARTKEY) PARTITIONS 40
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.part;
+
+drop table if exists ${var:KUDU_DB_NAME}.supplier;
+CREATE TABLE ${var:KUDU_DB_NAME}.supplier
+PRIMARY KEY (S_SUPPKEY)
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.supplier;
+
+drop table if exists ${var:KUDU_DB_NAME}.partsupp;
+CREATE TABLE ${var:KUDU_DB_NAME}.partsupp
+PRIMARY KEY (PS_PARTKEY)
+PARTITION BY HASH(PS_PARTKEY) PARTITIONS 40
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.partsupp;
+
+drop table if exists ${var:KUDU_DB_NAME}.nation;
+CREATE TABLE ${var:KUDU_DB_NAME}.nation
+PRIMARY KEY (N_NATIONKEY)
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.nation;
+
+drop table if exists ${var:KUDU_DB_NAME}.region;
+CREATE TABLE ${var:KUDU_DB_NAME}.region
+PRIMARY KEY (R_REGIONKEY)
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.region;
+
+drop table if exists ${var:KUDU_DB_NAME}.customer;
+CREATE TABLE ${var:KUDU_DB_NAME}.customer
+PRIMARY KEY (C_CUSTKEY)
+PARTITION BY HASH(C_CUSTKEY) PARTITIONS 40
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.customer;
+
+drop table if exists ${var:KUDU_DB_NAME}.orders;
+CREATE TABLE ${var:KUDU_DB_NAME}.orders
+PRIMARY KEY (O_ORDERKEY)
+PARTITION BY HASH(O_ORDERKEY) PARTITIONS 40
+STORED AS KUDU
+AS SELECT * FROM ${var:SOURCE_DB}.orders;
