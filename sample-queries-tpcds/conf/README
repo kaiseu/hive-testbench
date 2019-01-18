@@ -1,0 +1,13 @@
+## this folder contains global and local settings for each query on different engines, e.g. mr, spark, sparksql
+## to set the global settings for mr, spark, or sparksql engine, add the configuration to mr.settings, spark.settings and sparksql.settings respectively
+## for mr and spark engine,to set the local settings for a query, create a file under mr or spark folder, and add hive settings to the file.
+## e.g., create local settings for TPC-DS query 1 on spark engine:
+### create a file named "tpcds_query1_spark.settings": touch spark/tpcds_query1_spark.settings
+### add configuration  "hive.exec.parallel=true" for query1: echo "set hive.exec.parallel=true;" >> spark/tpcds_query1_spark.settings
+
+## create local settings for TPC-DS query 12 on mr engine:
+### create a file named "tpcds_query12_mr.settings": touch mr/tpcds_query12_mr.settings
+### add configuration  "hive.exec.parallel=true" for query12: echo "set hive.exec.parallel=true;" >> mr/tpcds_query12_mr.settings
+
+## for sparksql engine, add configuration to sparksql.conf for spark
+## settings in "print.settings" file only used for printing to the log, so please do not add user specific settings to it

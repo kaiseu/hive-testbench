@@ -1,12 +1,12 @@
-## script for running TPC-H queries
+## script for running TPC-DS queries
 
 ################################################################################
-## User Specific Settings, Change Based on Your Needs
+## User Specific Settings, Change Based on Your Needs 
 ################################################################################
 ## scale factor or data scale to run
 SCALE_FACTOR="1000"
 ## engine to run, can be mr spark sparksql
-ENGINE="sparksql"
+ENGINE="spark"
 ## file format, can be orc or parquet
 FILEFORMAT="orc"
 ## whether to automatically clear cache before round run
@@ -14,19 +14,19 @@ CACHE_CLEAR="true"
 ## host names used for clear cache, usually is all the machines in a cluster
 HOSTS="r73-master r73-slave1 r73-slave2 r73-slave3 r73-slave4"
 ## queries to run
-QUERY_LIST="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22"
+QUERY_LIST="3 7 12 15 17 18 19 20 21 25 26 27 28 29 31 32 34 39 40 42 43 45 46 49 50 51 52 54 55 56 58 60 63 66 68 71 73 75 76 79 80 82 84 85 87 88 89 90 91 92 93 94 96 97 98"
 
 ################################################################################
 ## DO NOT NEED TO EDIT BELOW PARAS!!!
 ################################################################################
 LOG_NAME="logs"
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
-BENCH_SETTING="${CURRENT_DIR}/sample-queries-tpch/testbench.settings"
-GLOBAL_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}.settings"
-LOCAL_SETTING_ROOT="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}"
-PRINT_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/print.settings"
-SPARKSQL_USER_CONF="${CURRENT_DIR}/sample-queries-tpch/conf/sparksql.conf"
-QUERY_ROOT="${CURRENT_DIR}/sample-queries-tpch"
+BENCH_SETTING="${CURRENT_DIR}/sample-queries-tpcds/testbench.settings"
+GLOBAL_SETTING="${CURRENT_DIR}/sample-queries-tpcds/conf/${ENGINE}.settings"
+LOCAL_SETTING_ROOT="${CURRENT_DIR}/sample-queries-tpcds/conf/${ENGINE}"
+PRINT_SETTING="${CURRENT_DIR}/sample-queries-tpcds/conf/print.settings"
+SPARKSQL_USER_CONF="${CURRENT_DIR}/sample-queries-tpcds/conf/sparksql.conf"
+QUERY_ROOT="${CURRENT_DIR}/sample-queries-tpcds"
 OUT_DIR_PATH="${CURRENT_DIR}/output"
 
 
@@ -35,7 +35,7 @@ if test ${SCALE_FACTOR} -le 1000; then
 else
 	SCHEMA_TYPE=partitioned
 fi
-DATABASE=tpch_${SCHEMA_TYPE}_${FILEFORMAT}_${SCALE_FACTOR}
+DATABASE=tpcds_${SCHEMA_TYPE}_${FILEFORMAT}_${SCALE_FACTOR}
 
 if [[ ! -d ${OUT_DIR_PATH}/${LOG_NAME} ]];then
 	echo "Creating output dir: ${OUT_DIR_PATH}/${LOG_NAME}"
@@ -48,19 +48,6 @@ function usage(){
 	exit 1
 }
 
-#function getExecTime() {
-#    start=$1
-#    end=$2
-#    start_s=$(echo $start | cut -d '.' -f 1)
-#    start_ns=$(echo $start | cut -d '.' -f 2)
-#    end_s=$(echo $end | cut -d '.' -f 1)
-#    end_ns=$(echo $end | cut -d '.' -f 2)
-#    delta_ms=$(( ( 10#$end_s - 10#$start_s ) * 1000 + ( 10#$end_ns / 1000000 - 10#$start_ns / 1000000 ) ))
-#    show_s=$(( $delta_ms / 1000 ))
-#    show_ms=$(( $delta_ms % 1000 ))
-#    echo "++ Duration: ${show_s}s ${show_ms}ms ++"
-#}
-#
 function getExecTime() {
 	start=$1
 	end=$2
@@ -85,23 +72,13 @@ function runQuery(){
 		OPTION+=(-i ${GLOBAL_SETTING})
 	fi
 
-	LOCAL_SETTING="${CURRENT_DIR}/sample-queries-tpch/conf/${ENGINE}/tpch_query${1}_${ENGINE}.settings"
-#	if [ -e ${LOCAL_SETTING} ]; then
-#		OPTION+=(-i ${LOCAL_SETTING})
-#	fi
-	
-#	OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
-	
-	## keep print setting at last
-       # if [ -e ${PRINT_SETTING} ]; then
-       #          OPTION+=(-i ${PRINT_SETTING})
-       # fi
+	LOCAL_SETTING="${CURRENT_DIR}/sample-queries-tpcds/conf/${ENGINE}/tpcds_query${1}_${ENGINE}.settings"
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
         	if [ -e ${LOCAL_SETTING} ]; then
                 	OPTION+=(-i ${LOCAL_SETTING})
         	fi
-		OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
+		OPTION+=(-f ${QUERY_ROOT}/tpcds_query${1}.sql --database ${DATABASE})
 		## keep print setting at last
         	if [ -e ${PRINT_SETTING} ]; then
                 	OPTION+=(-i ${PRINT_SETTING})
@@ -115,7 +92,7 @@ function runQuery(){
 		if [ -e ${LOCAL_SETTING} ]; then
                 	OPTION+=(-i ${LOCAL_SETTING})
         	fi
-		OPTION+=(-f ${QUERY_ROOT}/tpch_query${1}.sql --database ${DATABASE})
+		OPTION+=(-f ${QUERY_ROOT}/tpcds_query${1}.sql --database ${DATABASE})
 		## keep print setting at last
         	if [ -e ${PRINT_SETTING} ]; then
                 	OPTION+=(-i ${PRINT_SETTING})
@@ -126,16 +103,16 @@ function runQuery(){
 		exit -1
 	fi
 	
-	echo "Running query$1 with command: ${CMD}" 2>&1 | tee ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	echo "Running query$1 with command: ${CMD}" 2>&1 | tee ${OUT_DIR_PATH}/${LOG_NAME}/tpcds_query${1}.log
 	start=$(date +%s%3N)
-	eval ${CMD} 2>&1 | tee -a ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	eval ${CMD} 2>&1 | tee -a ${OUT_DIR_PATH}/${LOG_NAME}/tpcds_query${1}.log
 	RES=$?
 	end=$(date +%s%3N)
-	getExecTime $start $end >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+	getExecTime $start $end >> ${OUT_DIR_PATH}/${LOG_NAME}/tpcds_query${1}.log
 	if [[ ${RES} == 0 ]]; then
-		echo "query$1 finished successfully!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+		echo "query$1 finished successfully!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpcds_query${1}.log
 	else
-		echo "query$1 failed!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpch_query${1}.log
+		echo "query$1 failed!" >> ${OUT_DIR_PATH}/${LOG_NAME}/tpcds_query${1}.log
 	fi
 }
 
@@ -175,7 +152,7 @@ function runAll(){
 	do
 		clearCache
 		echo "Running round $r"
-		export LOG_NAME=logs_tpch_${ENGINE}_${FILEFORMAT}_${SCALE_FACTOR}_`date +%Y%m%d%H%M%S`
+		export LOG_NAME=logs_tpcds_${ENGINE}_${FILEFORMAT}_${SCALE_FACTOR}_`date +%Y%m%d%H%M%S`
 		for q in ${QUERY_LIST};
 		do
 			runQuery $q
@@ -189,16 +166,16 @@ function runAll(){
 
 ## clear the cache of machines defined in ${HOSTS}
 function clearCache(){
-        if [[ ${CACHE_CLEAR} == "true" ]] ; then
-                if [ -e ${HOSTS} ]; then
-                        pssh -H ${HOSTS} -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
-                        pssh -H ${HOSTS} -t 0  -i free -g
-                else
-                        echo "Clear cache is chosen but hosts file does not exists, will not clear cache!"
-                fi
-        else
-                echo "Will not automatically clear cache!"
-        fi
+	if [[ ${CACHE_CLEAR} == "true" ]] ; then
+		if [ -e ${HOSTS} ]; then
+			pssh -H ${HOSTS} -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
+			pssh -H ${HOSTS} -t 0  -i free -g
+		else
+			echo "Clear cache is chosen but hosts file does not exists, will not clear cache!"
+		fi
+	else
+		echo "Will not automatically clear cache!"
+	fi
 }
 
 ################################################################################
