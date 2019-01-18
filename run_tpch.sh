@@ -1,3 +1,4 @@
+## script for running TPC-H queries
 SCALE_FACTOR="1000"
 ## engine to run, can be mr spark sparksql
 ENGINE="sparksql"
