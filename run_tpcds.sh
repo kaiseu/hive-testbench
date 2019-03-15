@@ -204,7 +204,7 @@ function runQuery(){
         	fi
 		CMD="hive ${OPTION[@]}"
 	elif [[ ${ENGINE} == "sparksql" ]]; then
-		if [ -e ${PRINT_SETTING} ]; then
+		if [ -e ${SPARKSQL_USER_CONF} ]; then
                 	OPTION+=(--properties-file ${SPARKSQL_USER_CONF})
         	fi
 		

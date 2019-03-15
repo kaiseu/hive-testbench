@@ -6,7 +6,7 @@
 ## scale factor or data scale to run
 SCALE_FACTOR="2"
 ## engine to run, can be mr spark sparksql
-ENGINE="spark"
+ENGINE="mr"
 ## file format, can be orc or parquet
 FILEFORMAT="orc"
 ## whether to automatically clear cache before round run
@@ -44,7 +44,7 @@ else
 fi
 DATABASE=tpch_${SCHEMA_TYPE}_${FILEFORMAT}_${SCALE_FACTOR}
 
-if [[ ! -d ${OUT_DIR_PATH}/${LOG_NAME} ]];then
+if [ ! -d ${OUT_DIR_PATH}/${LOG_NAME} ];then
 	echo "Creating output dir: ${OUT_DIR_PATH}/${LOG_NAME}"
 	mkdir -p ${OUT_DIR_PATH}/${LOG_NAME}
 	echo "Dir Created!"
