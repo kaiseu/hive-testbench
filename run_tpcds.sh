@@ -103,7 +103,7 @@ function dataGen(){
         	exit 1
 	fi
 
-	hadoop fs -chmod -R 777  /${RAW_DATA_DIR}/${SCALE_FACTOR}
+	hadoop fs -chmod -R 777  ${RAW_DATA_DIR}/${SCALE_FACTOR}
 	echo "TPC-DS text data generation complete."
 }
 
