@@ -25,10 +25,10 @@ LOG_NAME="logs"
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 SETTING_ROOT="${CURRENT_DIR}/sample-queries-${BENCHMARK}/conf"
 POPULATE_SETTING="${SETTING_ROOT}/populate.sql"
-BENCH_SETTING="${SETTING_ROOT}/testbench.settings"
-GLOBAL_SETTING="${SETTING_ROOT}/${ENGINE}.settings"
+BENCH_SETTING="${SETTING_ROOT}/${BENCHMARK}.sql"
+GLOBAL_SETTING="${SETTING_ROOT}/${ENGINE}.sql"
 LOCAL_SETTING_ROOT="${SETTING_ROOT}/${ENGINE}"
-PRINT_SETTING="${SETTING_ROOT}/print.settings"
+PRINT_SETTING="${SETTING_ROOT}/print.sql"
 SPARKSQL_USER_CONF="${SETTING_ROOT}/sparksql.conf"
 QUERY_ROOT="${CURRENT_DIR}/sample-queries-${BENCHMARK}"
 OUT_DIR_PATH="${CURRENT_DIR}/output"
@@ -199,7 +199,7 @@ function populateMetastore(){
 	if [ "X${BENCHMARK}" = "Xtpcds" ]; then
 		for t in ${FACTS}
 		do
-	        	COMMAND="$HIVE  -i settings/load-partitioned.sql -f ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SCALE=${SCALE_FACTOR} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar BUCKETS=${BUCKETS} --hivevar RETURN_BUCKETS=${RETURN_BUCKETS} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
+	        	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SCALE=${SCALE_FACTOR} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar BUCKETS=${BUCKETS} --hivevar RETURN_BUCKETS=${RETURN_BUCKETS} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
 			DATE_PREFIX "INFO" "($i/$TOTAL) Populating table: $t." 2>&1 | tee -a $POPULATE_LOG
 	                DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 	                $COMMAND 2>&1 | >> $POPULATE_LOG
@@ -236,7 +236,7 @@ function runQuery(){
 		OPTION+=(-i ${GLOBAL_SETTING})
 	fi
 
-	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/query${1}_${ENGINE}.settings"
+	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/query${1}_${ENGINE}.sql"
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
         	if [ -e ${LOCAL_SETTING} ]; then
@@ -258,9 +258,9 @@ function runQuery(){
         	fi
 		OPTION+=(-f ${QUERY_ROOT}/query${1}.sql --database ${DATABASE} --name query${1})
 		## keep print setting at last
-        	if [ -e ${PRINT_SETTING} ]; then
-                	OPTION+=(-i ${PRINT_SETTING})
-        	fi
+        	#if [ -e ${PRINT_SETTING} ]; then
+                #	OPTION+=(-i ${PRINT_SETTING})
+        	#fi
 		CMD="${SPARK_HOME}/bin/spark-sql ${OPTION[@]}"
 	else
 		DATE_PREFIX "ERROR" "Currently only support engine: mr/spark/sparksql, exiting..."

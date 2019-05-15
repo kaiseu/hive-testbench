@@ -1,0 +1,1 @@
+-- TPC-DS specifical settings, for this benchmark
