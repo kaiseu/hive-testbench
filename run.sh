@@ -182,7 +182,7 @@ function populateMetastore(){
 	
 	for t in ${TABLES}
 	do
-        	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar SCALE=${SCALE_FACTOR} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
+        	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar SCALE=${SCALE_FACTOR} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
         	DATE_PREFIX "INFO" "($i/$TOTAL) Populating table: $t." 2>&1 | tee -a $POPULATE_LOG
 		DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 		$COMMAND 2>&1 | >> $POPULATE_LOG
@@ -200,7 +200,7 @@ function populateMetastore(){
 	if [ "X${BENCHMARK}" = "Xtpcds" ]; then
 		for t in ${FACTS}
 		do
-	        	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SCALE=${SCALE_FACTOR} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar BUCKETS=${BUCKETS} --hivevar RETURN_BUCKETS=${RETURN_BUCKETS} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
+	        	COMMAND="$HIVE -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SCALE=${SCALE_FACTOR} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar BUCKETS=${BUCKETS} --hivevar RETURN_BUCKETS=${RETURN_BUCKETS} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
 			DATE_PREFIX "INFO" "($i/$TOTAL) Populating table: $t." 2>&1 | tee -a $POPULATE_LOG
 	                DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 	                $COMMAND 2>&1 | >> $POPULATE_LOG
