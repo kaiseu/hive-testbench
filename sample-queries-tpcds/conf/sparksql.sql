@@ -1,4 +1,4 @@
 -- Settings for SparkSQL engine
-set spark.default.parallelism=348;
-set spark.sql.autoBroadcastJoinThreshold=524288000;
-set spark.sql.shuffle.partitions=1000;
+set spark.default.parallelism=288;
+set spark.sql.autoBroadcastJoinThreshold=1073741824;
+set spark.sql.shuffle.partitions=288;

@@ -6,7 +6,7 @@
 ## benchmark to run, cna be tpcds or tpch
 BENCHMARK="tpcds"
 ## scale factor or data scale to run
-SCALE_FACTOR="2"
+SCALE_FACTOR="1000"
 ## engine to run, can be mr spark sparksql
 ENGINE="sparksql"
 ## file format, can be orc or parquet
@@ -25,6 +25,7 @@ LOG_NAME="logs"
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 SETTING_ROOT="${CURRENT_DIR}/sample-queries-${BENCHMARK}/conf"
 POPULATE_SETTING="${SETTING_ROOT}/populate.sql"
+ANALYZE_SQL="${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/analyze.sql"
 BENCH_SETTING="${SETTING_ROOT}/${BENCHMARK}.sql"
 GLOBAL_SETTING="${SETTING_ROOT}/${ENGINE}.sql"
 LOCAL_SETTING_ROOT="${SETTING_ROOT}/${ENGINE}"
@@ -215,7 +216,19 @@ function populateMetastore(){
 	fi
 	end=$(date +%s%3N)
         getExecTime $start $end 2>&1 | tee -a $POPULATE_LOG
-	DATE_PREFIX "INFO" "Populating tables done!" 2>&1 | tee -a $POPULATE_LOG
+        DATE_PREFIX "INFO" "Populating tables done!" 2>&1 | tee -a $POPULATE_LOG
+	# analyze the tables
+	DATE_PREFIX "INFO" "Analyzing tables..." 2>&1 | tee -a $POPULATE_LOG
+	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ${ANALYZE_SQL} --database ${DATABASE}"
+	DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
+	$COMMAND 2>&1 | >> $POPULATE_LOG
+	RES=${PIPESTATUS[0]}
+	if [[ ${RES} == 0 ]]; then
+		DATE_PREFIX "INFO" "Analyzing tables done!" 2>&1 | tee -a $POPULATE_LOG
+	else
+		DATE_PREFIX "ERROR" "Analyzing tables failed!" 2>&1 | tee -a $POPULATE_LOG
+		exit -4
+	fi
 }
 
 
@@ -264,7 +277,7 @@ function runQuery(){
 		CMD="${SPARK_HOME}/bin/spark-sql ${OPTION[@]}"
 	else
 		DATE_PREFIX "ERROR" "Currently only support engine: mr/spark/sparksql, exiting..."
-		exit -4
+		exit -5
 	fi
 	
 	QUERY_LOG=${OUT_DIR_PATH}/${LOG_NAME}/query${1}.log	
@@ -349,7 +362,7 @@ function clearCache(){
 ################################################################################
 ## Start From Here!
 ################################################################################
-#dataGen
-#populateMetastore
-#runAll 1
-runQuery 90
+dataGen
+populateMetastore
+runAll 1
+#runQuery 90
