@@ -273,11 +273,11 @@ function runQuery(){
 	${CMD} 2>&1 | tee -a ${QUERY_LOG}
 	RES=${PIPESTATUS[0]}
 	end=$(date +%s%3N)
-	getExecTime $start $end >> ${QUERY_LOG}
+	getExecTime $start $end 2>&1 | tee -a ${QUERY_LOG}
 	if [[ ${RES} == 0 ]]; then
-		DATE_PREFIX "INFO" "query$1 finished successfully!" >> ${QUERY_LOG}
+		DATE_PREFIX "INFO" "query$1 finished successfully!" 2>&1 | tee -a ${QUERY_LOG}
 	else
-		DATE_PREFIX "ERROR" "query$1 failed!" >> ${QUERY_LOG}
+		DATE_PREFIX "ERROR" "query$1 failed!" 2>&1 | tee -a ${QUERY_LOG}
 	fi
 }
 
@@ -352,4 +352,4 @@ function clearCache(){
 #dataGen
 #populateMetastore
 #runAll 1
-#runQuery 2
+runQuery 90
