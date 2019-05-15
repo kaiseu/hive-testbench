@@ -325,8 +325,8 @@ function clearCache(){
 ################################################################################
 ## Start From Here!
 ################################################################################
-#dataGen
+dataGen
 populateMetastore
 #runQuery 1
-runAll 1
+#runAll 1
 #runQuery 2
