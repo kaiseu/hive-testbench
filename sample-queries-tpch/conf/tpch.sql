@@ -1,1 +1,0 @@
--- TPC-H specifical settings, for this benchmark 

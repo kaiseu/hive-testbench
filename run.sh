@@ -10,7 +10,7 @@ SCALE_FACTOR="1000"
 ## engine to run, can be mr spark sparksql
 ENGINE="sparksql"
 ## file format, can be orc or parquet
-FILEFORMAT="orc"
+FILEFORMAT="parquet"
 ## whether to automatically clear cache before round run
 CACHE_CLEAR="true"
 ## host names used for clear cache, usually is all the machines in a cluster
@@ -24,13 +24,13 @@ H_QUERY_LIST="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22"
 LOG_NAME="logs"
 CURRENT_DIR=$( cd $( dirname ${BASH_SOURCE[0]} ) && pwd )
 SETTING_ROOT="${CURRENT_DIR}/sample-queries-${BENCHMARK}/conf"
-POPULATE_SETTING="${SETTING_ROOT}/populate.sql"
+POPULATE_SETTING="${SETTING_ROOT}/${ENGINE}/populate.sql"
 ANALYZE_SQL="${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/analyze.sql"
 BENCH_SETTING="${SETTING_ROOT}/${BENCHMARK}.sql"
 GLOBAL_SETTING="${SETTING_ROOT}/${ENGINE}.sql"
 LOCAL_SETTING_ROOT="${SETTING_ROOT}/${ENGINE}"
 PRINT_SETTING="${SETTING_ROOT}/print.sql"
-SPARKSQL_USER_CONF="${SETTING_ROOT}/sparksql.conf"
+SPARKSQL_USER_CONF="${SETTING_ROOT}/sparksql/sparksql.conf"
 QUERY_ROOT="${CURRENT_DIR}/sample-queries-${BENCHMARK}"
 OUT_DIR_PATH="${CURRENT_DIR}/output"
 RAW_DATA_DIR="/tmp/${BENCHMARK}-generate"
@@ -45,6 +45,8 @@ TOTAL=24
 TABLES=${DIMS}
 # Default query list, default is tpcds query list
 QUERY_LIST=${DS_QUERY_LIST}
+# Default execution engine, for mr and spark it needs hive, for sparkqsl it will use spark-sql directly
+EXECUTION_BINARY="hive"
 ################################################################################
 ## DO NOT NEED TO EDIT ABOVE PARAS!!!
 ################################################################################
@@ -139,17 +141,33 @@ function dataGen(){
 }
 
 function populateMetastore(){
-	if [ "X${HIVE_HOME}" = "X" ]; then
-		which hive > /dev/null 2>&1
-		if [ $? -ne 0 ]; then
-        		DATE_PREFIX "ERROR" "Script must be run where Hive is installed"
-        		exit 1
+	DATE_PREFIX "INFO" "Populating metastore with engine: ${ENGINE}, the format is: ${FILEFORMAT}, scale factor is: ${SCALE_FACTOR}"
+	if [[ "X${ENGINE}" = "Xmr" || "X${ENGINE}" = "Xspark" ]]; then
+		if [ "X${HIVE_HOME}" = "X" ]; then
+			which hive > /dev/null 2>&1
+			if [ $? -ne 0 ]; then
+	        		DATE_PREFIX "ERROR" "Script must be run where Hive is installed, or HIVE_HOME is set"
+	        		exit 1
+			else
+				EXECUTION_BINARY="hive"
+			fi
 		else
-			HIVE=hive
+			EXECUTION_BINARY="${HIVE_HOME}/bin/hive"
 		fi
-	else
-		HIVE="${HIVE_HOME}/bin/hive"
+	elif [ "X${ENGINE}" = "Xsparksql" ]; then
+		if [ "X${SPARK_HOME}" = "X" ]; then
+			which spark-sql > /dev/null 2>&1
+			if [ $? -ne 0 ]; then
+				DATE_PREFIX "ERROR" "Script must be run where spark-sql is installed, or SPARK_HOME is set."
+				exit 2
+			else
+				EXECUTION_BINARY="spark-sql"
+			fi
+		else
+			EXECUTION_BINARY="${SPARK_HOME}/bin/spark-sql"
+		fi
 	fi
+	EXECUTION_BINARY="${EXECUTION_BINARY} --properties-file ${SPARKSQL_USER_CONF}"
 
 	# Create the partitioned and bucketed tables.
 	if [ "X${FILEFORMAT}" = "X" ]; then
@@ -168,7 +186,7 @@ function populateMetastore(){
 	# Create the text/flat tables as external tables. These will be later be converted to ${FILEFORMAT}.
 	start=$(date +%s%3N)
 	DATE_PREFIX "INFO" "Loading text data into external tables." 2>&1 | tee $POPULATE_LOG
-	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/text/alltables.sql --hivevar DB=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar LOCATION=${RAW_DATA_DIR}/${SCALE_FACTOR}"
+	COMMAND="${EXECUTION_BINARY}  -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/text/alltables.sql -d DB=${BENCHMARK}_text_${SCALE_FACTOR} -d LOCATION=${RAW_DATA_DIR}/${SCALE_FACTOR}"
 	DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 	${COMMAND} 2>&1 | >> $POPULATE_LOG
 	DATE_PREFIX "INFO" "Loading external text tables done!" 2>&1 | tee -a $POPULATE_LOG
@@ -182,7 +200,11 @@ function populateMetastore(){
 	
 	for t in ${TABLES}
 	do
-        	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar SCALE=${SCALE_FACTOR} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
+        	COMMAND="${EXECUTION_BINARY}  -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql -d DB=${DATABASE} -d SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} -d SCALE=${SCALE_FACTOR} -d REDUCERS=${REDUCERS} -d FILE=${FILEFORMAT}"
+		## add app name if the engine is sparksql
+		if [[ "X${ENGINE}" = "Xsparksql" ]]; then
+			COMMAND="${COMMAND} --name populate-${t}"
+		fi
         	DATE_PREFIX "INFO" "($i/$TOTAL) Populating table: $t." 2>&1 | tee -a $POPULATE_LOG
 		DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 		$COMMAND 2>&1 | >> $POPULATE_LOG
@@ -200,7 +222,11 @@ function populateMetastore(){
 	if [ "X${BENCHMARK}" = "Xtpcds" ]; then
 		for t in ${FACTS}
 		do
-	        	COMMAND="$HIVE -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql --hivevar DB=${DATABASE} --hivevar SCALE=${SCALE_FACTOR} --hivevar SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} --hivevar BUCKETS=${BUCKETS} --hivevar RETURN_BUCKETS=${RETURN_BUCKETS} --hivevar REDUCERS=${REDUCERS} --hivevar FILE=${FILEFORMAT}"
+	        	COMMAND="${EXECUTION_BINARY} -i ${POPULATE_SETTING} -f ${CURRENT_DIR}/ddl-${BENCHMARK}/bin_partitioned/${t}.sql -d DB=${DATABASE} -d SCALE=${SCALE_FACTOR} -d SOURCE=${BENCHMARK}_text_${SCALE_FACTOR} -d BUCKETS=${BUCKETS} -d RETURN_BUCKETS=${RETURN_BUCKETS} -d REDUCERS=${REDUCERS} -d FILE=${FILEFORMAT}"
+			## add app name if the engine is sparksql
+                	if [[ "X${ENGINE}" = "Xsparksql" ]]; then
+                        	COMMAND="${COMMAND} --name populate-${t}"
+                	fi
 			DATE_PREFIX "INFO" "($i/$TOTAL) Populating table: $t." 2>&1 | tee -a $POPULATE_LOG
 	                DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 	                $COMMAND 2>&1 | >> $POPULATE_LOG
@@ -219,7 +245,7 @@ function populateMetastore(){
         DATE_PREFIX "INFO" "Populating tables done!" 2>&1 | tee -a $POPULATE_LOG
 	# analyze the tables
 	DATE_PREFIX "INFO" "Analyzing tables..." 2>&1 | tee -a $POPULATE_LOG
-	COMMAND="$HIVE  -i ${POPULATE_SETTING} -f ${ANALYZE_SQL} --database ${DATABASE}"
+	COMMAND="${EXECUTION_BINARY}  -i ${POPULATE_SETTING} -f ${ANALYZE_SQL} --database ${DATABASE}"
 	DATE_PREFIX "INFO" "The command is: ${COMMAND}" 2>&1 | tee -a $POPULATE_LOG
 	$COMMAND 2>&1 | >> $POPULATE_LOG
 	RES=${PIPESTATUS[0]}

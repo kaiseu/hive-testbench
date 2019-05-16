@@ -1,4 +1,5 @@
--- Settings for SparkSQL engine
-set spark.default.parallelism=348;
-set spark.sql.autoBroadcastJoinThreshold=524288000;
-set spark.sql.shuffle.partitions=1000;
+-- settings for spark engine
+set hive.execution.engine=spark;
+set spark.executor.cores=2;
+set spark.executor.memory=3g;
+set spark.driver.memory=5g;
