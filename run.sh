@@ -16,7 +16,8 @@ CACHE_CLEAR="true"
 ## host names used for clear cache, usually is all the machines in a cluster
 HOSTS="clr-node1 clr-node2 clr-node3 clr-node4"
 ## queries to run
-DS_QUERY_LIST="3 7 12 15 17 18 19 20 21 25 26 27 28 29 31 32 34 39 40 42 43 45 46 49 50 51 52 54 55 56 58 60 63 66 68 71 73 75 76 79 80 82 84 85 87 88 89 90 91 92 93 94 96 97 98"
+#DS_QUERY_LIST="3 7 12 15 17 18 19 20 21 25 26 27 28 29 31 32 34 39 40 42 43 45 46 49 50 51 52 54 55 56 58 60 63 66 68 71 73 75 76 79 80 82 84 85 87 88 89 90 91 92 93 94 96 97 98"
+DS_QUERY_LIST="1 2 3 4 5 6 7 8 9 10 11 12 13 14a 14b 15 16 17 18 19 20 21 22 23a 23b 24a 24b 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39a 39b 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99"
 H_QUERY_LIST="1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22"
 ################################################################################
 ## DO NOT NEED TO EDIT BELOW PARAS!!!
@@ -64,7 +65,7 @@ else
 	exit -1;
 fi
 
-if test ${SCALE_FACTOR} -le 1000; then
+if test ${SCALE_FACTOR} -lt 1000; then
 	SCHEMA_TYPE=flat
 else
 	SCHEMA_TYPE=partitioned
@@ -274,14 +275,18 @@ function runQuery(){
 	if [ -e ${GLOBAL_SETTING} ]; then
 		OPTION+=(-i ${GLOBAL_SETTING})
 	fi
-
-	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/query${1}_${ENGINE}.sql"
+	
+	QUERY_NAME="query${1}"
+	if [ ${ENGINE} = "sparksql" ]; then
+		QUERY_NAME="q${1}"
+	fi
+	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}_${ENGINE}.sql"
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
         	if [ -e ${LOCAL_SETTING} ]; then
                 	OPTION+=(-i ${LOCAL_SETTING})
         	fi
-		OPTION+=(-f ${QUERY_ROOT}/query${1}.sql --database ${DATABASE})
+		OPTION+=(-f ${QUERY_ROOT}/${QUERY_NAME}.sql --database ${DATABASE})
 		## keep print setting at last
         	if [ -e ${PRINT_SETTING} ]; then
                 	OPTION+=(-i ${PRINT_SETTING})
@@ -295,7 +300,7 @@ function runQuery(){
 		if [ -e ${LOCAL_SETTING} ]; then
                 	OPTION+=(-i ${LOCAL_SETTING})
         	fi
-		OPTION+=(-f ${QUERY_ROOT}/query${1}.sql --database ${DATABASE} --name query${1})
+		OPTION+=(-f ${QUERY_ROOT}/${QUERY_NAME}.sql --database ${DATABASE} --name ${QUERY_NAME})
 		## keep print setting at last
         	#if [ -e ${PRINT_SETTING} ]; then
                 #	OPTION+=(-i ${PRINT_SETTING})
@@ -306,7 +311,7 @@ function runQuery(){
 		exit -5
 	fi
 	
-	QUERY_LOG=${OUT_DIR_PATH}/${LOG_NAME}/query${1}.log	
+	QUERY_LOG=${OUT_DIR_PATH}/${LOG_NAME}/${QUERY_NAME}.log	
 	DATE_PREFIX "INFO" "Running query$1 with command: ${CMD}" 2>&1 | tee ${QUERY_LOG}
 	start=$(date +%s%3N)
 	${CMD} 2>&1 | tee -a ${QUERY_LOG}
@@ -388,7 +393,7 @@ function clearCache(){
 ################################################################################
 ## Start From Here!
 ################################################################################
-dataGen
-populateMetastore
-runAll 1
-#runQuery 90
+#dataGen
+#populateMetastore
+#runAll 1
+runQuery 1
