@@ -378,8 +378,8 @@ function runAll(){
 
 ## clear the cache of machines defined in ${HOSTS}
 function clearCache(){
-	if [[ ${CACHE_CLEAR} == "true" ]] ; then
-		if [ -e ${HOSTS} ]; then
+	if [ ${CACHE_CLEAR} = "true" ] ; then
+		if [ ! -z ${HOSTS} ]; then
 			pssh -H ${HOSTS} -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
 			pssh -H ${HOSTS} -t 0  -i free -g
 		else
