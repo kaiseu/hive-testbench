@@ -115,6 +115,24 @@ function getExecTime() {
 	echo "Duration: ${time_s} s"
 }
 
+## Merge files into one file and remove duplicated lines
+function Merge_conf() {
+	if [ $# -lt 3 ]; then
+		DATE_PREFIX "ERROR" "Merge configuration files failed, at least three inputs are needed!"	
+		DATE_PREFIX "WARN" "Usage: Merge_conf file1 file2 file3 ... fileN result"
+		exit -6
+	fi
+	echo "## Auto generated configuration file"> /tmp/merge.tmp
+	until [ $# -eq 1 ]
+	do
+		cat $1 >> /tmp/merge.tmp
+		shift
+	done
+	OUT=$1
+	sed "/^#/ d" /tmp/merge.tmp | sed "/^--/ d"| sort -b -d -u -o ${OUT} ## exclude lines begin with # or --, and sort them ignore leading blanks and by dictionary-order to .tmp file
+	rm -f /tmp/merge.tmp
+}
+
 function dataGen(){
 	if [ ! -f ${CURRENT_DIR}/${BENCHMARK}-gen/target/${BENCHMARK}-gen-1.0-SNAPSHOT.jar ]; then
 	        DATE_PREFIX "ERROR" "Please build the data generator with ./${BENCHMARK}-build.sh first"
@@ -271,18 +289,18 @@ function runQuery(){
         	DATE_PREFIX "INFO" "Dir Created!"
 	fi
 	
-	OPTION=(-i ${BENCH_SETTING}) 
-	if [ -e ${GLOBAL_SETTING} ]; then
-		OPTION+=(-i ${GLOBAL_SETTING})
-	fi
-	
 	QUERY_NAME="query${1}"
 	if [ ${ENGINE} = "sparksql" ]; then
 		QUERY_NAME="q${1}"
 	fi
-	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}_${ENGINE}.sql"
+	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}.sql"
+	OPTION=()
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
+		OPTION=(-i ${BENCH_SETTING})
+        	if [ -e ${GLOBAL_SETTING} ]; then
+                	OPTION+=(-i ${GLOBAL_SETTING})
+        	fi
         	if [ -e ${LOCAL_SETTING} ]; then
                 	OPTION+=(-i ${LOCAL_SETTING})
         	fi
@@ -293,18 +311,17 @@ function runQuery(){
         	fi
 		CMD="hive ${OPTION[@]}"
 	elif [[ ${ENGINE} == "sparksql" ]]; then
-		if [ -e ${SPARKSQL_USER_CONF} ]; then
-                	OPTION+=(--properties-file ${SPARKSQL_USER_CONF})
+		if [ -e ${LOCAL_SETTING} ]; then
+			DATE_PREFIX "INFO" "Local setting file exist for query${1}, will merge benchmark setting and SparkSQL engine settings to this file..."	
+                	Merge_conf ${LOCAL_SETTING} ${BENCH_SETTING} ${SPARKSQL_USER_CONF} ${LOCAL_SETTING} 
+			DATE_PREFIX "INFO" "Merging configuration file done!"
+		else
+			DATE_PREFIX "INFO" "Local setting file does not exist, will automatically generate it using benchmark setting and SparkSQL engine settings..."
+			Merge_conf ${BENCH_SETTING} ${SPARKSQL_USER_CONF} ${LOCAL_SETTING}
+			DATE_PREFIX "INFO" "Automatically generating configuration file done!"
         	fi
 		
-		if [ -e ${LOCAL_SETTING} ]; then
-                	OPTION+=(-i ${LOCAL_SETTING})
-        	fi
-		OPTION+=(-f ${QUERY_ROOT}/${QUERY_NAME}.sql --database ${DATABASE} --name ${QUERY_NAME})
-		## keep print setting at last
-        	#if [ -e ${PRINT_SETTING} ]; then
-                #	OPTION+=(-i ${PRINT_SETTING})
-        	#fi
+		OPTION+=(--properties-file ${LOCAL_SETTING} -f ${QUERY_ROOT}/${QUERY_NAME}.sql --database ${DATABASE} --name ${QUERY_NAME})
 		CMD="${SPARK_HOME}/bin/spark-sql ${OPTION[@]}"
 	else
 		DATE_PREFIX "ERROR" "Currently only support engine: mr/spark/sparksql, exiting..."
@@ -395,5 +412,5 @@ function clearCache(){
 ################################################################################
 #dataGen
 #populateMetastore
-#runAll 1
-runQuery 1
+#runAll 3
+#runQuery 24b
