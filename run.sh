@@ -14,7 +14,7 @@ FILEFORMAT="parquet"
 ## whether to automatically clear cache before round run
 CACHE_CLEAR="true"
 ## host names used for clear cache, usually is all the machines in a cluster
-HOSTS="clr-node1 clr-node2 clr-node3 clr-node4"
+HOSTS="rhel-slave1 rhel-slave2 rhel-slave3 rhel-slave4"
 ## queries to run
 #DS_QUERY_LIST="3 7 12 15 17 18 19 20 21 25 26 27 28 29 31 32 34 39 40 42 43 45 46 49 50 51 52 54 55 56 58 60 63 66 68 71 73 75 76 79 80 82 84 85 87 88 89 90 91 92 93 94 96 97 98"
 DS_QUERY_LIST="1 2 3 4 5 6 7 8 9 10 11 12 13 14a 14b 15 16 17 18 19 20 21 22 23a 23b 24a 24b 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39a 39b 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95 96 97 98 99"
@@ -406,8 +406,8 @@ function runAll(){
 function clearCache() {
 	if [ ${CACHE_CLEAR} = "true" ] ; then
 		if [ "${HOSTS}" != "" ]; then
-			pssh -H ${HOSTS} -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
-			pssh -H ${HOSTS} -t 0  -i free -g
+			pssh -H "${HOSTS}" -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
+			pssh -H "${HOSTS}" -t 0  -i free -g
 		else
 			DATE_PREFIX "WARN" "Clear cache is chosen but hosts does not exists, will not clear cache!"
 		fi
