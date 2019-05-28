@@ -403,13 +403,13 @@ function runAll(){
 }
 
 ## clear the cache of machines defined in ${HOSTS}
-function clearCache(){
+function clearCache() {
 	if [ ${CACHE_CLEAR} = "true" ] ; then
-		if [ ! -z ${HOSTS} ]; then
+		if [ "${HOSTS}" != "" ]; then
 			pssh -H ${HOSTS} -t 0  -i "sync; echo 3 > /proc/sys/vm/drop_caches && printf '\n%s\n' 'Ram-cache Cleared'"
 			pssh -H ${HOSTS} -t 0  -i free -g
 		else
-			DATE_PREFIX "WARN" "Clear cache is chosen but hosts file does not exists, will not clear cache!"
+			DATE_PREFIX "WARN" "Clear cache is chosen but hosts does not exists, will not clear cache!"
 		fi
 	else
 		DATE_PREFIX "INFO" "Will not automatically clear cache!"
@@ -421,5 +421,5 @@ function clearCache(){
 ################################################################################
 #dataGen
 #populateMetastore
-#runAll 3
+#runAll 1
 #runQuery 24b
