@@ -122,15 +122,23 @@ function Merge_conf() {
 		DATE_PREFIX "WARN" "Usage: Merge_conf file1 file2 file3 ... fileN result"
 		exit -6
 	fi
-	echo "## Auto generated configuration file"> /tmp/merge.tmp
+	tmp_file=/tmp/merge.tmp
+	echo "## Auto generated configuration file"> ${tmp_file}
 	until [ $# -eq 1 ]
 	do
-		cat $1 >> /tmp/merge.tmp
+		cat $1 >> ${tmp_file}
 		shift
 	done
-	OUT=$1
-	sed "/^#/ d" /tmp/merge.tmp | sed "/^--/ d"| sort -b -d -u -o ${OUT} ## exclude lines begin with # or --, and sort them ignore leading blanks and by dictionary-order to .tmp file
-	rm -f /tmp/merge.tmp
+	sed -i '/^#/ d' ${tmp_file} ## delect line start with '#'
+	sed -i '/^--/ d' ${tmp_file} ## delect line start with '--'
+	sed -i 's/^set//g' ${tmp_file} ## delect 'set' start in a line
+        sed -i 's/^ //g' ${tmp_file} ## delect ' ' start in a line
+        sed -i 's/;$//g' ${tmp_file} ## delect ';' end in a line
+        sed -i '/^$/d' ${tmp_file} ## delect blank lines
+
+	OUT=$1 ## the last is the output file
+	cat ${tmp_file} | sort -t '=' -k 1,1 -b -d -u -o ${OUT} ## sort by first column split by '=', ignore leading blanks and by dictionary-order
+	#rm -f ${tmp_file}
 }
 
 function dataGen(){
@@ -289,11 +297,12 @@ function runQuery(){
         	DATE_PREFIX "INFO" "Dir Created!"
 	fi
 	
+	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}.sql"
 	QUERY_NAME="query${1}"
 	if [ ${ENGINE} = "sparksql" ]; then
 		QUERY_NAME="q${1}"
+		LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}.conf"
 	fi
-	LOCAL_SETTING="${LOCAL_SETTING_ROOT}/${QUERY_NAME}.sql"
 	OPTION=()
 	
 	if [[ ${ENGINE} == "mr" || ${ENGINE} == "spark" ]]; then
